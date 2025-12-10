@@ -1,0 +1,29 @@
+name: CI/CD with Docker Compose
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: develop
+
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          export CR_PAT=$MY_TOKEN
+          export COMMIT=${CI_COMMIT_SHA:0:8}
+          echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin
+          docker build -t ghcr.io/USERNAME/app-test:$COMMIT .
+          docker push ghcr.io/USERNAME/app-test:$COMMIT
+          docker logout ghcr.io
+
+      # - name: Deploy with Docker Compose
+      #   run: |
+      #     export COMMIT=${CI_COMMIT_SHA:0:8}         
+      #     docker-compose down
+      #     docker-compose up -d --build
