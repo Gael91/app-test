@@ -4,22 +4,27 @@ on:
   push:
     branches: ["main"]
 
+env:
+  CR_PAT: ${{ secrets.MY_TOKEN }}
+  REGISTRY: ghcr.io
+  IMAGE_NAME: USERNAME/app-test
+
 jobs:
   deploy:
     runs-on: develop
 
     steps:
-
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build Docker image
+      - name: Login to GHCR
+        run: echo "$CR_PAT" | docker login ghcr.io -u USERNAME --password-stdin
+
+      - name: Build and Push Docker image
         run: |
-          export CR_PAT=$MY_TOKEN
-          export COMMIT=${CI_COMMIT_SHA:0:8}
-          echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin
-          docker build -t ghcr.io/USERNAME/app-test:$COMMIT .
-          docker push ghcr.io/USERNAME/app-test:$COMMIT
+          COMMIT=$(git rev-parse --short HEAD)
+          docker build -t $REGISTRY/$IMAGE_NAME:$COMMIT .
+          docker push $REGISTRY/$IMAGE_NAME:$COMMIT
           docker logout ghcr.io
 
       # - name: Deploy with Docker Compose
