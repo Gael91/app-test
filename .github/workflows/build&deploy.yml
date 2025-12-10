@@ -5,9 +5,9 @@ on:
     branches: ["main"]
 
 env:
-  CR_PAT: ${{ secrets.MY_TOKEN }}
+  CR_PAT: ${{ vars.MY_TOKEN }}
   REGISTRY: ghcr.io
-  IMAGE_NAME: USERNAME/app-test
+  IMAGE_NAME: gael91/app-test
 
 jobs:
   deploy:
@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Login to GHCR
-        run: echo "$CR_PAT" | docker login ghcr.io -u USERNAME --password-stdin
+        run: echo "$CR_PAT" | docker login ghcr.io -u gael91 --password-stdin
 
       - name: Build and Push Docker image
         run: |
