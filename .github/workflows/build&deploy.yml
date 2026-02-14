@@ -5,30 +5,43 @@ on:
     branches: ["main"]
 
 env:
-  CR_PAT: ${{ vars.MY_TOKEN }}
-  REGISTRY: ghcr.io
-  IMAGE_NAME: gael91/app-test
+  # CR_PAT: ${{ vars.MY_TOKEN }}
+  # REGISTRY: ghcr.io
+  # IMAGE_NAME: gael91/app-test
+  SERVER_USERNAME_AND_HOST: ${{ vars.SERVER_USERNAME }}@${{ vars.SERVER_HOST }}
 
 jobs:
-  deploy:
-    runs-on: develop
+
+
+  build-upload-main:
+    name: Build and upload in Main
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: Login to GHCR
-        run: echo "$CR_PAT" | docker login ghcr.io -u gael91 --password-stdin
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2.5.0
+        with:
+          key: ${{ secrets.SERVER_SSH_PRIVATE_KEY }}
+          known_hosts: ${{ vars.SERVER_HOST }}
 
-      - name: Build and Push Docker image
+      - name: Generate Docker tag
         run: |
-          COMMIT=$(git rev-parse --short HEAD)
-          docker build -t $REGISTRY/$IMAGE_NAME:$COMMIT .
-          docker push $REGISTRY/$IMAGE_NAME:$COMMIT
-          docker logout ghcr.io
-
-      # - name: Deploy with Docker Compose
-      #   run: |
-      #     export COMMIT=${CI_COMMIT_SHA:0:8}         
-      #     docker-compose down
-      #     docker-compose up -d --build
+          TAG="${{ github.sha }}"
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          
+      - name: Build web image
+        working-directory: ./
+        env:
+          CLIENT_URL: ${{ secrets.CLIENT_URL_DEV }}
+        run: |
+          docker build -t ndemin-api-dev:${{ env.TAG }} .
+      - name: Push web image to remote server
+        run: |
+          docker save ndemin-api-dev:${{ env.TAG }} | gzip | ssh -o StrictHostKeyChecking=no "$SERVER_USERNAME_AND_HOST" "gzip -d | docker load -q"
+          
