@@ -41,7 +41,9 @@ jobs:
           CLIENT_URL: ${{ secrets.CLIENT_URL_DEV }}
         run: |
           docker build -t ndemin-api-dev:${{ env.TAG }} .
-      - name: Push web image to remote server
+      - name: Test SSH connection
         run: |
-          docker save ndemin-api-dev:${{ env.TAG }} | gzip | ssh -o StrictHostKeyChecking=no "$SERVER_USERNAME_AND_HOST" "gzip -d | docker load -q"
-          
+          ssh -o StrictHostKeyChecking=no "$SERVER_USERNAME_AND_HOST" "echo 'SSH connection successful!' && whoami && pwd"
+      # - name: Push web image to remote server
+      #   run: |
+      #     docker save ndemin-api-dev:${{ env.TAG }} | gzip | ssh -o StrictHostKeyChecking=no "$SERVER_USERNAME_AND_HOST" "gzip -d | docker load -q"
